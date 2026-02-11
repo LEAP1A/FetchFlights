@@ -3,22 +3,23 @@ from FlightRadar24 import FlightRadar24API
 import time
 import os
 import datetime
+# 当前进度: 能够完整地获取指定机场一整天的计划航班并存入txt。
+# 下一步: 添加判断脚本运行时间是0点前还是0点后 从而决定要拿哪一天的数据; 定义宏方便修改数据; 添加写入csv为后续筛选做准备; 航班的筛选需要新开一个py文件
 
 def main():
-    # 初始化 FR24 接口
-    fr_api = FlightRadar24API()
+    fr_api = FlightRadar24API()  # 初始化 FR24 接口
 
     today = datetime.date.today()
     tomorrow = today + datetime.timedelta(days=1)
     day_after_tomorrow = today + datetime.timedelta(days=2)
 
     # Convert dates to string format for easy comparison
-    tomorrow_date_str = tomorrow.strftime("%Y-%m-%d")
-    stop_date_str = day_after_tomorrow.strftime("%Y-%m-%d") # 可更改 0点前跑脚本为后天, 0点后跑脚本为明天
+    target_date_str = tomorrow.strftime("%Y-%m-%d")
+    stop_date_str = day_after_tomorrow.strftime("%Y-%m-%d") # 停止获取的日期,可更改 - 0点前跑脚本为day_after_tomorrow, 0点后跑脚本为tomorrow_date
 
     # 获取机场对象 (Xi'an Xianyang International Airport)
     airport_code = "ZLXY"
-    txtFileName = f"{airport_code}_{tomorrow_date_str}_arrivals.txt"
+    txtFileName = f"{airport_code}_{target_date_str}_arrivals.txt"
 
     # schedule - arrivals - page: total = 总页数 current = 当前页数
     if os.path.exists(txtFileName):
