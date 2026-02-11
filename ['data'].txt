@@ -1,0 +1,135 @@
+const flightData = {
+  // 根节点：所有信息都在 'flight' 下面
+  "flight": {
+    
+    // 1. 身份信息 (Identification)
+    "identification": {
+      "id": "3e45ed89",          // FR24 内部追踪 ID
+      "row": 5768587810,         // 数据库行号 (一般不用)
+      "number": {
+        "default": "GS7686",     // 【关键】航班号 (IATA)，如 GS7686
+        "alternative": null      // 共享代码或其他代号
+      },
+      "callsign": "GCR7686",     // 呼号 (飞行员和塔台用的)，如 GCR7686
+      "codeshare": null          // 是否代码共享
+    },
+
+    // 2. 状态信息 (Status)
+    "status": {
+      "live": false,             // 【关键】是否正在飞 (False 表示已落地或未起飞)
+      "text": "Landed 22:47",    // 状态文本 (给用户看的)
+      "icon": "green",           // 图标颜色
+      "estimated": null,         // 预计时间 (如果已落地通常为 null)
+      "ambiguous": false,
+      "generic": {
+        "status": {
+          "text": "landed",      // 通用状态
+          "type": "arrival",     // 类型：进港
+          "color": "green",
+          "diverted": null       // 是否备降
+        },
+        "eventTime": {
+          "utc": 1770734874,     // 事件发生时间 (UTC 时间戳)
+          "local": 1770763674    // 事件发生时间 (当地时间戳)
+        }
+      }
+    },
+
+    // 3. 飞机信息 (Aircraft) —— 【这里有你要的注册号】
+    "aircraft": {
+      "model": {
+        "code": "E190",          // 机型简码
+        "text": "Embraer E190LR" // 机型全称
+      },
+      "registration": "B-3120",  // 【核心目标】飞机注册号 (机尾号)
+      "country": {
+        "id": 46,
+        "name": "China",
+        "alpha2": "CN",
+        "alpha3": "CHN"
+      },
+      "hex": "7804A3",           // ADS-B 雷达特征码
+      "serialNo": null,          // 序列号
+      "age": {                   // 机龄信息
+        "availability": true
+      }
+    },
+
+    // 4. 所有者信息 (Owner)
+    "owner": null,               // 飞机所有者 (如果是租的可能会显示)
+
+    // 5. 航空公司 (Airline)
+    "airline": {
+      "name": "Tianjin Airlines", // 航司名称
+      "code": {
+        "iata": "GS",            // 二字码
+        "icao": "GCR"            // 三字码
+      },
+      "short": "Tianjin Airlines"
+    },
+
+    // 6. 机场信息 (Airport)
+    "airport": {
+      // 出发地
+      "origin": {
+        "name": "Shiyan Wudangshan Airport", // 机场名
+        "code": {
+          "iata": "WDS",         // 三字码
+          "icao": "ZHSY"         // 四字码
+        },
+        "position": {
+          "latitude": 32.591667, // 纬度
+          "longitude": 110.907776,// 经度
+          "country": { "name": "China", "code": "CN", "id": 46 },
+          "region": { "city": "Shiyan" }
+        },
+        "timezone": {
+          "name": "Asia/Shanghai",
+          "offset": 28800,
+          "abbr": "CST",
+          "isDst": false
+        },
+        "visible": true
+      },
+      // 目的地
+      "destination": {
+        // (结构同上，省略部分字段...)
+        "info": {
+          "terminal": "3",       // 航站楼
+          "baggage": "308",      // 行李转盘
+          "gate": null           // 登机口
+        },
+        "timezone": {
+          "name": "Asia/Chongqing",
+          "offset": 28800,
+          "abbr": "CST"
+        }
+      },
+      "real": null // 实际路径数据 (通常为空)
+    },
+
+    // 7. 时间信息 (Time) —— 所有的 Unix 时间戳都在这
+    "time": {
+      // 计划时间 (机票上的时间)
+      "scheduled": {
+        "departure": 1770732000, // 计划起飞
+        "arrival": 1770736800    // 计划到达
+      },
+      // 实际时间 (真实发生的时间)
+      "real": {
+        "departure": 1770731753, // 实际起飞
+        "arrival": 1770734874    // 实际到达
+      },
+      // 预计时间 (还在飞的时候会有，落地了通常为 null)
+      "estimated": {
+        "departure": null,
+        "arrival": null
+      },
+      // 其他时间
+      "other": {
+        "eta": 1770734874,       // 预计到达时间 (ETA)
+        "duration": 3120         // 飞行时长 (秒)
+      }
+    }
+  }
+};

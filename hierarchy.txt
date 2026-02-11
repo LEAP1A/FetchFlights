@@ -1,0 +1,37 @@
+{
+  "airport": {  // 根节点
+    "pluginData": {  // 插件数据（核心都在这里）
+      "details": { ... },  // 机场本身的详情（名字、经纬度、图片等）
+      "schedule": {  // <--- 你最想要的时刻表在这里！！！
+        "arrivals": {  // 进港航班
+          "item": { "current": 100, "total": 675, ... },
+          "data": [  // <--- 这是一个列表，里面全是航班对象
+            {
+              "flight": {  // 单个航班的核心信息
+                "identification": {
+                  "number": { "default": "CZ8265" },  // 航班号
+                  "callsign": "CSN8265"
+                },
+                "status": {
+                  "live": true,
+                  "text": "Estimated 22:52"
+                },
+                "aircraft": {  // <--- 飞机信息在这里
+                  "model": { "code": "B738", "text": "Boeing 737-81B" },
+                  "registration": "B-5597"  // <--- 找到了！这是你要的注册号
+                },
+                "airline": { "name": "China Southern Airlines" },
+                "airport": {  // 起降地信息
+                  "origin": { "code": { "iata": "NNG" }, "name": "Nanning..." },
+                  "destination": { ... }
+                }
+              }
+            },
+            // ... 更多航班 ...
+          ]
+        },
+        "departures": { ... } // 出港航班（结构同上）
+      }
+    }
+  }
+}
