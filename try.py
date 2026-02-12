@@ -3,23 +3,33 @@ from FlightRadar24 import FlightRadar24API
 import time
 import os
 import datetime
-# 当前进度: 能够完整地获取指定机场一整天的计划航班并存入txt。
-# 下一步: 添加判断脚本运行时间是0点前还是0点后 从而决定要拿哪一天的数据; 定义宏方便修改数据; 添加写入csv为后续筛选做准备; 航班的筛选需要新开一个py文件
+import csv  
+# 当前进度: 增加自动判断脚本运行时间并动态调整获取数据范围的功能; 新增筛选脚本filter_flights.py
+# 下一步: 新建脚本进行
+
+TARGET_AIRPORT = "ZLXY" # ICAO
 
 def main():
+    # 初始化
     fr_api = FlightRadar24API()  # 初始化 FR24 接口
-
     today = datetime.date.today()
     tomorrow = today + datetime.timedelta(days=1)
     day_after_tomorrow = today + datetime.timedelta(days=2)
 
-    # Convert dates to string format for easy comparison
-    target_date_str = tomorrow.strftime("%Y-%m-%d")
-    stop_date_str = day_after_tomorrow.strftime("%Y-%m-%d") # 停止获取的日期,可更改 - 0点前跑脚本为day_after_tomorrow, 0点后跑脚本为tomorrow_date
-
-    # 获取机场对象 (Xi'an Xianyang International Airport)
-    airport_code = "ZLXY"
+    # 确认获取数据的范围 - 0点前跑脚本获取从现在到明晚12点的，0点后跑获取从现在到今晚12点
+    current_hour = datetime.datetime.now().hour
+    if current_hour > 12:
+        target_date_str = tomorrow.strftime("%Y-%m-%d")
+        stop_date_str = day_after_tomorrow.strftime("%Y-%m-%d") # 停止获取的日期 - 中午12以后到凌晨0点前跑脚本为day_after_tomorrow。获取从现在到明天晚上12点前的数据。
+    else:
+        target_date_str = today.strftime("%Y-%m-%d")
+        stop_date_str = tomorrow.strftime("%Y-%m-%d") # 停止获取的日期 - 凌晨0点到中午十二点前跑脚本为tomorrow_date。获取从现在到今天晚上12点前的数据
+    print(f"Output the arrival schedule from now to {target_date_str} night")
+        
+    
+    airport_code = TARGET_AIRPORT
     txtFileName = f"{airport_code}_{target_date_str}_arrivals.txt"
+    csvFileName = f"{airport_code}_{target_date_str}_arrivals.csv"
 
     # schedule - arrivals - page: total = 总页数 current = 当前页数
     if os.path.exists(txtFileName):
@@ -38,7 +48,7 @@ def main():
             f.write(header)
             f.write("-" * 105 + "\n")
         # Write the first page
-        write_onePage_to_file(arrivalsList, txtFileName, stop_date_str)
+        write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str)
         randNum = random.uniform(3, 5)
         print(f"Page 1 done. Waiting for {randNum:.2f} seconds before fetching the next page...")
         time.sleep(randNum)
@@ -47,7 +57,7 @@ def main():
             print(f"Fetching page {pageNum}...")
             fullScheduleData = fr_api.get_airport_details(airport_code, page=pageNum)['airport']['pluginData']['schedule']
             arrivalsList = fullScheduleData['arrivals']['data']
-            if not (write_onePage_to_file(arrivalsList, txtFileName, stop_date_str)):
+            if not (write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str)):
                 break
             if pageNum < totalPages:
                 randNum = random.uniform(2, 5)
@@ -56,14 +66,17 @@ def main():
             
         print("All Done!")
             
-def write_onePage_to_file(arrivalsList, txtFileName, stop_date_str):
-    with open(txtFileName, 'a', encoding='utf-8') as f:
+def write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str):
+    with open(txtFileName, 'a', encoding='utf-8') as f, \
+         open(csvFileName, 'a', encoding='utf-8', newline='') as f_csv:
+        
+        writer = csv.writer(f_csv)
+
         for item in arrivalsList:
             # Get the main flight object safely
             flight = item.get('flight') or {}
 
             # 1. Flight Number / Callsign
-            # Try callsign first, then default number, else "N/A"
             identification = flight.get('identification') or {}
             flight_num = identification.get('callsign') or identification.get('number', {}).get('default') or "N/A"
 
@@ -81,7 +94,7 @@ def write_onePage_to_file(arrivalsList, txtFileName, stop_date_str):
                 arrival_time_obj = datetime.datetime.fromtimestamp(arrival_ts)
                 arrival_date_str = arrival_time_obj.strftime('%Y-%m-%d')
                 arrival_fulltime_str = arrival_time_obj.strftime('%Y-%m-%d %H:%M')
-                if arrival_date_str >= stop_date_str: # 超过一天的日期就不拿了
+                if arrival_date_str >= stop_date_str: 
                     return False
             else:
                 arrival_fulltime_str = "N/A"
@@ -96,18 +109,21 @@ def write_onePage_to_file(arrivalsList, txtFileName, stop_date_str):
             # 5. Aircraft Information
             aircraft = flight.get('aircraft') or {}
             
-            # Get model code (e.g., B738)
+            # Get model code
             model_code = "N/A"
             if aircraft.get('model'):
                 model_code = aircraft['model'].get('code') or "N/A"
             
-            # Get registration (e.g., B-1234)
+            # Get registration
             registration = aircraft.get('registration') or "N/A"
 
-            # 6. Write formatted line to file
-            # Slice airline_name[:25] to prevent long names from breaking the table alignment
+            # 6. Write formatted line to TXT file
             line = f"{flight_num:<10} | {airline_name[:40]:<40} | {arrival_fulltime_str:<20} | {origin_code:<8} | {model_code:<8} | {registration}\n"
             f.write(line)
+
+            # 7. Write list row to CSV file (No header needed as per request)
+            writer.writerow([flight_num, airline_name, arrival_fulltime_str, origin_code, model_code, registration])
+            
     return True
 
 if __name__ == "__main__":
