@@ -17,14 +17,16 @@ def main():
     today = datetime.date.today()
     tomorrow = today + datetime.timedelta(days=1)
     
+    # Logic to decide date range
     if datetime.datetime.now().hour > 12:
         target_date_str = tomorrow.strftime("%Y-%m-%d")
     else:
         target_date_str = today.strftime("%Y-%m-%d")
+        
     # File Names
     csvFileName = f"{airport_code}_{target_date_str}_arrivals.csv"  
+    outputFileName = f"{airport_code}_{target_date_str}_selected_arrivals.md" # Changed to .md
 
-    outputFileName = f"{airport_code}_{target_date_str}_selected_arrivals.txt"
     count = 0
     try:
         with open(csvFileName, 'r', encoding='utf-8') as f_in, \
@@ -32,17 +34,18 @@ def main():
             
             reader = csv.reader(f_in)
             
-            # Write Header to the output TXT file
-            header = f"{'Flight':<10} | {'Airline':<40} | {'Arrival Time':<20} | {'Origin':<8} | {'Model':<8} | {'Reg'}\n"
-            f_out.write(header)
-            f_out.write("-" * 105 + "\n")
+            # 1. Write Markdown Title and Table Header
+            f_out.write(f"# {airport_code} - {target_date_str} Selected Flights\n\n")
+            # Markdown table syntax
+            f_out.write("| Flight | Airline | Arrival Time | Origin | Model | Reg |\n")
+            f_out.write("|---|---|---|---|---|---|\n") # Separator line
 
             for row in reader:
-                # Skip empty lines if any
+                # Skip empty lines
                 if not row:
                     continue
                 
-                # Unpack the row (CSV columns: Flight, Airline, Time, Origin, Model, Reg)
+                # Unpack row
                 flight_num = row[0]
                 airline_name = row[1]
                 arrival_time = row[2]
@@ -50,33 +53,38 @@ def main():
                 model_code = row[4]
                 registration = row[5]
 
-                # Initialize a flag
+                # Initialize highlight variables (default is normal text)
+                disp_airline = airline_name
+                disp_model = model_code
+                disp_reg = registration
+                
                 is_selected = False
 
-                # --- Filter 1: Airline string contains "(" ---
+                # --- Filter 1: Airline check ---
                 if "(" in airline_name:
                     is_selected = True
+                    disp_airline = f"**{airline_name}**"  # Highlight Airline Column
 
-                # --- Filter 2: Model is in the target list ---
+                # --- Filter 2: Model check ---
                 if model_code in TARGET_MODELS:
                     is_selected = True
+                    disp_model = f"**{model_code}**" # Highlight Model Column
 
-                # --- Filter 3: Registration check --- USED ONLY FOR MAINLAND CHINA AIRPORT TO EXCLUDE CAAC A/C
-                # We want to keep it if it is NOT a standard mainland China reg (B-1234)
-                # Regex explanation: ^B-\d means "Starts with B- then a digit"
-                # If it matches, it's standard. We select if it does NOT match.
-                # Also ensure registration is not "N/A" before checking
+                # --- Filter 3: Registration check ---
                 if registration != "N/A":
                     if not re.match(r"^B-\d", registration):
                         is_selected = True
+                        disp_reg = f"**{registration}**" # Highlight Registration Column
 
-                # --- Write to file if selected ---
+                # --- Write row if selected ---
                 if is_selected:
-                    line = f"{flight_num:<10} | {airline_name[:40]:<40} | {arrival_time:<20} | {origin_code:<8} | {model_code:<8} | {registration}\n"
+                    # Construct Markdown table row using pipes |
+                    line = f"| {flight_num} | {disp_airline} | {arrival_time} | {origin_code} | {disp_model} | {disp_reg} |\n"
                     f_out.write(line)
                     count += 1
 
-        print(f"Done! Found {count} flights matching criteria. Saved to {outputFileName}")
+        print(f"Done! Found {count} flights. Saved to {outputFileName}")
+        print("Tip: Open the .md file in VS Code and press 'Ctrl + Shift + V' to see the pretty table.")
 
     except FileNotFoundError:
         print(f"Error: The file '{csvFileName}' was not found. Please check the filename.")
