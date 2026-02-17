@@ -2,6 +2,8 @@ import csv
 import re 
 import datetime
 
+# 当前进度:筛选航班列表新增颜色突出显示; 支持从第二天的某个时间点开始筛选
+# 下一步: 
 # ================= CONFIGURATION =================
 airport_code = "ZLXY" # ICAO
 
@@ -10,6 +12,7 @@ TARGET_MODELS = [
      "A19N", "A332", "A333","A339", "A359", "B733", "B734", "B752", "B763", "B772", "B77L", "B77W", "B788", "B789", "B744", "AJ27", "C919", "IL76", 
      "330", "332", "333", "359", "739", "73F", "75F", "76F", "77F", "77L", "773", "77W", "777", "788", "789", "744", "C09", "909", "919"
 ]
+START_TIME = "08:00" # 只在列表显示几点之后的航班
 # =============================================
 
 def main():
@@ -34,10 +37,14 @@ def main():
             
             reader = csv.reader(f_in)
             
-            # 1. Write Markdown Title and Table Header
-            f_out.write(f"# {airport_code} - {target_date_str} Selected Flights\n\n")
-            # Markdown table syntax
-            f_out.write("| Flight | Airline | Arrival Time | Origin | Model | Reg |\n")
+            # 1. Write Markdown Title and Table Header 
+            f_out.write(f"# {airport_code} - {target_date_str} Selected Flights from {START_TIME}\n\n")
+            f_out.write(f'<span style="color: orange"><b>Special Livery=Orange</b></span>; ')
+            f_out.write(f'<span style="color: #39FF14"><b>Wide-body=Bright Green</b></span>; ')
+            f_out.write(f'<span style="color: #4682B4"><b>Other Selected Models=Dark Blue</b></span>; ')
+            f_out.write(f'<span style="color: red"><b>Non-Chinese Reg=Red</b></span>\n\n')
+            
+            f_out.write("| Flight | Airline | Arrival Time | Model | Reg | Origin |\n")
             f_out.write("|---|---|---|---|---|---|\n") # Separator line
 
             for row in reader:
@@ -60,26 +67,35 @@ def main():
                 
                 is_selected = False
 
-                # --- Filter 1: Airline check ---
+                # --- Filter 1: Airline check (Orange + Bold) ---
                 if "(" in airline_name:
                     is_selected = True
-                    disp_airline = f"**{airline_name}**"  # Highlight Airline Column
+                    # 橙色 + 加粗
+                    disp_airline = f'<span style="color: orange"><b>{airline_name}</b></span>'
 
-                # --- Filter 2: Model check ---
+                # --- Filter 2: Model check (Blue + Bold) ---
                 if model_code in TARGET_MODELS:
                     is_selected = True
-                    disp_model = f"**{model_code}**" # Highlight Model Column
+                    
+                    if model_code in [ # 宽体 = 亮绿色 + 加粗 
+                        "A339", "A359", "B763", "B772", "B77L", "B77W", "B788", "B789", "B744", "IL76", 
+                        "359", "76F", "77F", "77L", "773", "77W", "777", "788", "789", "744"]:
+                        disp_model = f'<span style="color: #39FF14"><b>{model_code}</b></span>'
+                    else: # 其他 = 薄荷青 + 加粗 
+                        disp_model = f'<span style="color: #4682B4"><b>{model_code}</b></span>'
 
-                # --- Filter 3: Registration check ---
+                # --- Filter 3: Registration check (Red + Bold) ---
                 if registration != "N/A":
                     if not re.match(r"^B-\d", registration):
                         is_selected = True
-                        disp_reg = f"**{registration}**" # Highlight Registration Column
+                        # 红色 + 加粗
+                        disp_reg = f'<span style="color: red"><b>{registration}</b></span>'
 
                 # --- Write row if selected ---
-                if is_selected:
+                # 选择几点之后的航班
+                if is_selected and arrival_time >= f"{target_date_str} {START_TIME}":
                     # Construct Markdown table row using pipes |
-                    line = f"| {flight_num} | {disp_airline} | {arrival_time} | {origin_code} | {disp_model} | {disp_reg} |\n"
+                    line = f"| {flight_num} | {disp_airline} | {arrival_time} | {disp_model} | {disp_reg} | {origin_code} |\n"
                     f_out.write(line)
                     count += 1
 

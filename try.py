@@ -4,8 +4,8 @@ import time
 import os
 import datetime
 import csv  
-# 当前进度: 增加自动判断脚本运行时间并动态调整获取数据范围的功能; 新增筛选脚本filter_flights.py
-# 下一步: 新建脚本进行
+# 当前进度: 文件不再输出txt格式，只将raw data保存进csv文件; 新一天运行时将自动删除前一天保存的csv和md文件
+# 下一步: 新增脚本前后调用两个脚本的内容 只用运行一次即可完成全部工作
 
 TARGET_AIRPORT = "ZLXY" # ICAO
 
@@ -28,13 +28,13 @@ def main():
         
     
     airport_code = TARGET_AIRPORT
-    txtFileName = f"{airport_code}_{target_date_str}_arrivals.txt"
     csvFileName = f"{airport_code}_{target_date_str}_arrivals.csv"
 
     # schedule - arrivals - page: total = 总页数 current = 当前页数
-    if os.path.exists(txtFileName):
-        print(f"File '{txtFileName}' already exists.")
+    if os.path.exists(csvFileName):
+        print(f"File '{csvFileName}' already exists.")
     else:
+        [os.remove(f) for f in os.listdir('.') if f.endswith(('arrivals.csv', 'arrivals.md'))] # 删除之前日期的文件
         print("Fetching Data From API...")
         fullScheduleData = fr_api.get_airport_details(airport_code, page=1)['airport']['pluginData']['schedule']
         totalPages = fullScheduleData['arrivals']['page']['total']  # 总页数
@@ -42,13 +42,8 @@ def main():
         
         arrivalsList = fullScheduleData['arrivals']['data']
         
-        # Write Header
-        with open(txtFileName, 'w', encoding='utf-8') as f:
-            header = f"{'Flight':<10} | {'Airline':<40} | {'Arrival Time':<20} | {'Origin':<8} | {'Model':<8} | {'Reg'}\n"
-            f.write(header)
-            f.write("-" * 105 + "\n")
         # Write the first page
-        write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str)
+        write_onePage_to_file(arrivalsList, csvFileName, stop_date_str)
         randNum = random.uniform(3, 5)
         print(f"Page 1 done. Waiting for {randNum:.2f} seconds before fetching the next page...")
         time.sleep(randNum)
@@ -57,7 +52,7 @@ def main():
             print(f"Fetching page {pageNum}...")
             fullScheduleData = fr_api.get_airport_details(airport_code, page=pageNum)['airport']['pluginData']['schedule']
             arrivalsList = fullScheduleData['arrivals']['data']
-            if not (write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str)):
+            if not (write_onePage_to_file(arrivalsList, csvFileName, stop_date_str)):
                 break
             if pageNum < totalPages:
                 randNum = random.uniform(2, 5)
@@ -66,9 +61,8 @@ def main():
             
         print("All Done!")
             
-def write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str):
-    with open(txtFileName, 'a', encoding='utf-8') as f, \
-         open(csvFileName, 'a', encoding='utf-8', newline='') as f_csv:
+def write_onePage_to_file(arrivalsList, csvFileName, stop_date_str):
+    with open(csvFileName, 'a', encoding='utf-8', newline='') as f_csv:
         
         writer = csv.writer(f_csv)
 
@@ -117,11 +111,7 @@ def write_onePage_to_file(arrivalsList, txtFileName, csvFileName, stop_date_str)
             # Get registration
             registration = aircraft.get('registration') or "N/A"
 
-            # 6. Write formatted line to TXT file
-            line = f"{flight_num:<10} | {airline_name[:40]:<40} | {arrival_fulltime_str:<20} | {origin_code:<8} | {model_code:<8} | {registration}\n"
-            f.write(line)
-
-            # 7. Write list row to CSV file (No header needed as per request)
+            # Write list row to CSV file (No header needed as per request)
             writer.writerow([flight_num, airline_name, arrival_fulltime_str, origin_code, model_code, registration])
             
     return True
