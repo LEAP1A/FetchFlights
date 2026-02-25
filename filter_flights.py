@@ -17,10 +17,10 @@ def run_filtering(airport_code, target_date_str, target_model_lst, start_time_st
             
             # 1. Write Markdown Title and Table Header 
             f_out.write(f"# {airport_code} - {target_date_str} Selected Flights from {start_time_str}\n\n")
-            f_out.write(f'<span style="color: orange"><b>Special Livery=Orange</b></span>; ')
-            f_out.write(f'<span style="color: #39FF14"><b>Wide-body=Bright Green</b></span>; ')
-            f_out.write(f'<span style="color: #4682B4"><b>Other Selected Models=Dark Blue</b></span>; ')
-            f_out.write(f'<span style="color: red"><b>Non-Chinese Reg=Red</b></span>\n\n')
+            f_out.write(f'<span style="color: orange"><b>Special Livery=Orange </b></span>')
+            f_out.write(f'<span style="color: #39FF14"><b> | Wide-body=Bright Green </b></span>')
+            f_out.write(f'<span style="color: #4682B4"><b> | Other Selected Models=Dark Blue </b></span>')
+            f_out.write(f'<span style="color: red"><b> | Non-Chinese Reg=Red</b></span>\n\n') if airport_code.startswith("Z") else f_out.write("\n\n")
             
             f_out.write("| Flight | Airline | Arrival Time | Model | Reg | Origin |\n")
             f_out.write("|---|---|---|---|---|---|\n") # Separator line
