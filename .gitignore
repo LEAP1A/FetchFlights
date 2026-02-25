@@ -3,3 +3,5 @@ test.py
 *_arrivals.csv
 *.md
 settings.json
+.DS_Store
+*.pyc

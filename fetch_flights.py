@@ -4,37 +4,23 @@ import time
 import os
 import datetime
 import csv  
-# 当前进度: 文件不再输出txt格式，只将raw data保存进csv文件; 新一天运行时将自动删除前一天保存的csv和md文件
-# 下一步: 新增脚本前后调用两个脚本的内容 只用运行一次即可完成全部工作
 
-TARGET_AIRPORT = "ZLXY" # ICAO
-
-def main():
+def run_fetching(airport_code, target_date_obj):
     # 初始化
     fr_api = FlightRadar24API()  # 初始化 FR24 接口
-    today = datetime.date.today()
-    tomorrow = today + datetime.timedelta(days=1)
-    day_after_tomorrow = today + datetime.timedelta(days=2)
-
-    # 确认获取数据的范围 - 0点前跑脚本获取从现在到明晚12点的，0点后跑获取从现在到今晚12点
-    current_hour = datetime.datetime.now().hour
-    if current_hour > 12:
-        target_date_str = tomorrow.strftime("%Y-%m-%d")
-        stop_date_str = day_after_tomorrow.strftime("%Y-%m-%d") # 停止获取的日期 - 中午12以后到凌晨0点前跑脚本为day_after_tomorrow。获取从现在到明天晚上12点前的数据。
-    else:
-        target_date_str = today.strftime("%Y-%m-%d")
-        stop_date_str = tomorrow.strftime("%Y-%m-%d") # 停止获取的日期 - 凌晨0点到中午十二点前跑脚本为tomorrow_date。获取从现在到今天晚上12点前的数据
-    print(f"Output the arrival schedule from now to {target_date_str} night")
-        
     
-    airport_code = TARGET_AIRPORT
+    stop_date_obj = target_date_obj + datetime.timedelta(days=1)
+    target_date_str = target_date_obj.strftime("%Y-%m-%d")
+    stop_date_str = stop_date_obj.strftime("%Y-%m-%d")
+    
     csvFileName = f"{airport_code}_{target_date_str}_arrivals.csv"
 
     # schedule - arrivals - page: total = 总页数 current = 当前页数
     if os.path.exists(csvFileName):
         print(f"File '{csvFileName}' already exists.")
     else:
-        [os.remove(f) for f in os.listdir('.') if f.endswith(('arrivals.csv', 'arrivals.md'))] # 删除之前日期的文件
+        print(f"Deleting old files from {airport_code}...")
+        [os.remove(f) for f in os.listdir('.') if f.startswith(airport_code) and f.endswith(('arrivals.csv', 'arrivals.md'))] # 删除之前日期的文件
         print("Fetching Data From API...")
         fullScheduleData = fr_api.get_airport_details(airport_code, page=1)['airport']['pluginData']['schedule']
         totalPages = fullScheduleData['arrivals']['page']['total']  # 总页数
@@ -52,7 +38,7 @@ def main():
             print(f"Fetching page {pageNum}...")
             fullScheduleData = fr_api.get_airport_details(airport_code, page=pageNum)['airport']['pluginData']['schedule']
             arrivalsList = fullScheduleData['arrivals']['data']
-            if not (write_onePage_to_file(arrivalsList, csvFileName, stop_date_str)):
+            if not (write_onePage_to_file(arrivalsList, csvFileName, stop_date_str)): # stop once encountered the next day data (which means all target date data has been fetched)
                 break
             if pageNum < totalPages:
                 randNum = random.uniform(2, 5)
@@ -116,8 +102,9 @@ def write_onePage_to_file(arrivalsList, csvFileName, stop_date_str):
             
     return True
 
-if __name__ == "__main__":
-    main()
+if __name__ == "__main__": # 调试时解开注释并指定抓取日期
+    print("单独调试 fetch_flights.py\n")
+    run_fetching("ZLXY", datetime.date.today()) 
 
  
 
