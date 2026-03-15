@@ -57,14 +57,28 @@ def run_filtering(airport_code, target_date_str, target_model_lst, start_time_st
                     
                     if model_code in [ # 宽体 = 亮绿色 + 加粗 
                         "A330", "A332", "A333", "A339", "A359", "B763", "B772", "B77L", "B77W", "B788", "B789", "B744", "IL76", 
-                        "330", "332", "333", "359", "76F", "77F", "77L", "773", "77W", "777", "788", "789", "744"]:
+                        "330", "332", "333", "359", "76F", "77X", "77F", "77L", "773", "77W", "777", "788", "789", "744"]:
                         disp_model = f'<span style="color: #39FF14"><b>{model_code}</b></span>'
                     else: # 其他 = 薄荷青 + 加粗 
                         disp_model = f'<span style="color: #4682B4"><b>{model_code}</b></span>'
 
                 # --- Filter 3: Registration check (Red + Bold) ---
-                if registration != "N/A" and airport_code.startswith("Z"): # 只针对中国机场进行非中国注册号的高亮
-                    if not re.match(r"^B-\d", registration):
+                if registration != "N/A" and airport_code.startswith("Z"): # 在中国机场排除中国大陆注册号
+                    if not re.match(r"^B-\d", registration) or len(registration) > 6: # 排除中国注册号 允许港台注册号
+                        is_selected = True
+                        # 红色 + 加粗
+                        disp_reg = f'<span style="color: red"><b>{registration}</b></span>'
+                        
+                if airport_code == "VHHH": # HKG
+                    if airline_name == "Cathay Pacific" and "(" not in airline_name: # HKG跳过国泰普通涂装
+                        continue
+                    if (registration != "N/A" and not re.match(r"^B-", registration)) or (len(registration) > 6): # 排除香港注册号和中国注册号 但允许台湾注册号
+                        is_selected = True
+                        # 红色 + 加粗
+                        disp_reg = f'<span style="color: red"><b>{registration}</b></span>'
+                        
+                if registration != "N/A" and airport_code == "VMMC": # MFM
+                    if (not re.match(r"^B-", registration)) or (len(registration) > 6): # 排除香港注册号和中国注册号 但允许台湾注册号
                         is_selected = True
                         # 红色 + 加粗
                         disp_reg = f'<span style="color: red"><b>{registration}</b></span>'
