@@ -96,9 +96,12 @@ def write_onePage_to_file(arrivalsList, csvFileName, stop_date_str):
             
             # Get registration
             registration = aircraft.get('registration') or "N/A"
+            
+            # Get full model text for cargo identification
+            model_full = aircraft['model'].get('text') or "N/A"
 
             # Write list row to CSV file (No header needed as per request)
-            writer.writerow([flight_num, airline_name, arrival_fulltime_str, origin_code, model_code, registration])
+            writer.writerow([flight_num, airline_name, arrival_fulltime_str, origin_code, model_code, registration, model_full])
             
     return True
 

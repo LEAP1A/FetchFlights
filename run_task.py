@@ -7,12 +7,18 @@ import filter_flights as filter  # filter_flights.py
 # Target Airport ICAO
 AIRPORT_CODE = "VHHH" 
 
-TARGET_MODELS_CONFIG = [
-     "A19N", "A330", "A332", "A333","A339", "A359", "B733", "B734", "B752", "B763", "B772", "B77L", "B77W", "B788", "B789", "B744", "AJ27", "C919", "IL76", 
-     "330", "332", "333", "359", "739", "73F", "75F", "76F", "77X", "77F", "77L", "773", "77W", "777", "788", "789", "744", "C09", "909", "919"
+TARGET_MODELS_CONFIG = [ #包括窄体
+    "A19N", "B734", "B752", "75F", "AJ27", "C919","C09", "909", "919","B733", 
+    "A330", "A332", "A333", "A339", "A343", "A345", "A346", "A359", "A35K", "A388",
+    "B742", "B744", "B748", "B762", "B763", "B764", "B772", "B77L", "B77W", "B788", "B789", 
+    "IL76", 
+    "330", "332", "333", "339", "343", "346", "359", "351", "388",
+    "742", "744", "74H", "74Y", "76F", "77X", "77F", "77L", "773", "77W", "777", "788", "789"
 ]
 
-FILTER_START_TIME = "04:00"
+WRITING_FOR_MINIPROGRAM = 1 # 1 = json; 0 = md
+
+FILTER_START_TIME = "00:00" # 只在写入到.md下生效, json文件默认从00:00开始筛选
 
 # ======================================================================
 def main():
@@ -36,8 +42,12 @@ def main():
     fetch.run_fetching(AIRPORT_CODE, target_date_obj)
 
     # --- filter_flights.py ---
-    print(f"\n[Step 2/2] Running filter_flights.py ...")
-    filter.run_filtering(AIRPORT_CODE, target_date_str, TARGET_MODELS_CONFIG, FILTER_START_TIME)
+    if WRITING_FOR_MINIPROGRAM:
+        print(f"\n[Step 2/2] Running filter_flights.py for MiniProgram (JSON output) ...")
+        filter.run_filterToJson(AIRPORT_CODE, target_date_str, TARGET_MODELS_CONFIG)
+    else:
+        print(f"\n[Step 2/2] Running filter_flights.py ...")
+        filter.run_filtering(AIRPORT_CODE, target_date_str, TARGET_MODELS_CONFIG, FILTER_START_TIME)
     print("-------------------****TASK COMPLETE****-------------------------")
 if __name__ == "__main__":
     main()

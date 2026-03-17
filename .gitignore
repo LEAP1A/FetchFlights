@@ -5,3 +5,4 @@ test.py
 settings.json
 .DS_Store
 *.pyc
+*.json
