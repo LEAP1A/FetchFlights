@@ -1,0 +1,17 @@
+[
+   {
+    "flightNo": "QTR8756",
+    "airline": "Qatar Cargo",
+    "time": "03-20 06:24",
+    "origin": "AMS",
+    "type": "772F",
+    "reg": "A7-BFU",
+    "isSpecial": false,
+    "isWideBody": true,
+    "isCargo": true,
+    "isForeign": true,
+    "title": "Qatar Cargo 772F",
+    "urlImage": "https://t.plnspttrs.net/12551/1819188_cd8a54cebd_280.jpg",
+    "imageCreator": "Severin Hackenberger"
+  },
+]

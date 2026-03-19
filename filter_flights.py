@@ -1,10 +1,13 @@
 import csv
 import re 
-import datetime
 import json
+import requests
+import time
+import random
 
-def run_filtering(airport_code, target_date_str, target_model_lst, start_time_str):
+def run_filtering(airport_code, target_date_obj, target_model_lst, start_time_str):
     
+    target_date_str = target_date_obj.strftime("%Y-%m-%d")
     # File Names
     csvFileName = f"{airport_code}_{target_date_str}_arrivals.csv"  
     outputFileName = f"{airport_code}_{target_date_str}_selected_arrivals.md" # Changed to .md
@@ -105,20 +108,22 @@ def run_filtering(airport_code, target_date_str, target_model_lst, start_time_st
 
 # -------------------------- For MiniProgram -------------------------------
 # 在HKG的筛选逻辑与输出为.md的有所不同，将保留HKG的宽体
-def run_filterToJson(airport_code, target_date_str, target_model_lst):
-    
+def run_filterToJson(airport_code, target_date_obj, target_model_lst):
+    target_date_str = target_date_obj.strftime("%Y-%m-%d")
     # 文件名替换为 .json
     csvFileName = f"{airport_code}_{target_date_str}_arrivals.csv"  
     outputFileName = f"{airport_code}_{target_date_str}_selected_arrivals.json"
     
-    wide_body_list = [
-        "A330", "A333", "A339", "A343", "A345", "A346", "A359", "A35K", "A388",
-        "B742", "B744", "B748", "B762", "B763", "B764", "B772", "B77L", "B77W", "B788", "B789", 
-        "IL76", 
-        "330", "332", "333", "339", "343", "346", "359", "351", "388",
-        "742", "744", "74H", "74Y", "76F", "77X", "77F", "77L", "773", "77W", "777", "788", "789"
+    wide_body_list = [ 
+        # 宽体
+        "A124", "A306", "A19N", "A332", "A333", "A339", "A343", "A345", "A346", "A359", "A35K", "A388",
+        "B742", "B744", "B748", "B762", "B763", "B764", "B772", "B77L", "B773", "B77W", "B788", "B789", "B78X",
+        "IL62", "IL76", "IL96", "MD11",  "IL6", "IL7", "I93",
+        # IATA
+        "M1F", "330", "332", "333", "339", "343", "346", "359", "351", "388",
+        "742", "744", "74H", "74N", "74X", "74Y", "763", "76W", "76X", "76Y", "772", "773", "77X", "77F", "77L", "77W", "788", "789", "781"
     ]
-    cargo_model_list = ["73F", "75F", "76F", "77F", "77X", "74Y", "IL76"]
+    cargo_model_dic = {"73F":"732F", "73Y":"733F", "73P":"B734F", "73U":"738F", "75F":"757F", "76X": "762F", "76Y":"763F", "77X":"772F", "B77L": "772F", "74N":"748F", "74X":"742F", "74Y":"744F", "ABY":"306F", "33X":"332F", "33Y":"333F", "IL7":"IL76", "IL62":"IL62", "IL6": "IL62", "IL96": "IL96", "I93": "IL96", "MD11":"MD11F", "M1F":"MD11F"}
 
     selected_flights = [] # 用于收集最终符合条件的航班字典
 
@@ -146,31 +151,42 @@ def run_filterToJson(airport_code, target_date_str, target_model_lst):
                 flight_data = {
                     "flightNo": flight_num,
                     "airline": airline_name,
-                    "time": arrival_time,
+                    "time": arrival_time[5:],
                     "origin": origin_code,
                     "type": model_code,
                     "reg": registration,
                     "isSpecial": False,    # 是否彩绘/特装
                     "isWideBody": False,   # 是否宽体机
                     "isCargo": False,      # 是否货机
-                    "isForeign": False     # 是否外籍/特殊注册号
+                    "isForeign": False,    # 是否外籍/特殊注册号
+                    "title": '',
+                    "urlImage": "",
+                    "imageCreator": ""
                 }
 
                 # --- 过滤器 1: 彩绘机检查 ---
                 if "(" in airline_name:
                     is_selected = True
                     flight_data["isSpecial"] = True
+                    flight_data["title"] = airline_name.split("(")[1].split(")")[0].strip()
 
                 # --- 过滤器 2: 目标机型与宽体机检查 ---
                 if model_code in target_model_lst:
                     is_selected = True
                     if model_code in wide_body_list:
                         flight_data["isWideBody"] = True
-
+                    if flight_data["title"] == '':
+                        flight_data["title"] = f"{airline_name} {model_code}"
+                            
                 # --- 过滤器 3: 货机检查 ---
-                if "f" in model_full.lower() or "cargo" in airline_name.lower() or model_code in cargo_model_list:
+                if "f" in model_full.lower() or "cargo" in airline_name.lower() or model_code in cargo_model_dic:
                     is_selected = True
                     flight_data["isCargo"] = True
+                    if flight_data["title"] == '':
+                            flight_data["title"] = f"{airline_name} {model_code}"
+                    if model_code in cargo_model_dic:
+                        flight_data["type"] = cargo_model_dic[model_code] # 将货机型号替换为更具体的型号
+                        flight_data["title"] = f"{airline_name} {flight_data['type']}"
 
                 # --- 过滤器 4: 注册号检查 (外籍/稀有) ---
                 if registration != "N/A":
@@ -178,6 +194,8 @@ def run_filterToJson(airport_code, target_date_str, target_model_lst):
                         if not re.match(r"^B-\d", registration) or len(registration) > 6: # 排除中国大陆注册号 允许所有境外注册号
                             is_selected = True
                             flight_data["isForeign"] = True
+                            if flight_data["title"] == '':
+                                flight_data["title"] = f"{airline_name} {model_code}"
                             
                     elif airport_code == "VHHH": # HKG
                         # if airline_name == "Cathay Pacific" and "(" not in airline_name: # 暂时保留HKG的普通涂装国泰宽体
@@ -185,15 +203,24 @@ def run_filterToJson(airport_code, target_date_str, target_model_lst):
                         if (not re.match(r"^B-", registration)) or (len(registration) > 6): # 在HKG/MFM需要再排除港澳注册号，只保留台湾和其他国家注册号
                             is_selected = True
                             flight_data["isForeign"] = True
+                            if flight_data["title"] == '':
+                                flight_data["title"] = f"{airline_name} {model_code}"
                             
                     elif airport_code == "VMMC": # MFM
                         if (not re.match(r"^B-", registration)) or (len(registration) > 6): # 在HKG/MFM需要再排除港澳注册号，只保留台湾和其他国家注册号
                             is_selected = True
                             flight_data["isForeign"] = True
+                            if flight_data["title"] == '':
+                                flight_data["title"] = f"{airline_name} {model_code}"
 
                 # --- 时间验证与追加 ---
                 # 只有被选中，且时间晚于目标时间的航班才会被加入列表
-                if is_selected and arrival_time >= f"{target_date_str} 00:00":
+                if is_selected:
+                    if registration != "N/A":
+                        print(f"Fetching {registration} image...")
+                        img_url, photographer = get_plane_image(registration)
+                        flight_data["urlImage"] = img_url
+                        flight_data["imageCreator"] = photographer
                     selected_flights.append(flight_data)
 
         # 统一将 Python 列表转为 JSON 格式并写入文件
@@ -206,10 +233,26 @@ def run_filterToJson(airport_code, target_date_str, target_model_lst):
     except FileNotFoundError:
         print(f"Error: The file '{csvFileName}' was not found. Please check the filename.")
         
-if __name__ == "__main__": 
-    print("单独调试 filter_flights.py\n")
-    TARGET_MODELS = [  # Target Aircraft Models 仅在单独调试时使用
-        "A19N", "A330", "A332", "A333","A339", "A359", "B733", "B734", "B752", "B763", "B772", "B77L", "B77W", "B788", "B789", "B744", "AJ27", "C919", "IL76", 
-        "330", "332", "333", "359", "739", "73F", "75F", "76F", "77F", "77L", "773", "77W", "777", "788", "789", "744", "C09", "909", "919"
-    ]
-    run_filtering("ZLXY", datetime.date.today().strftime("%Y-%m-%d"), TARGET_MODELS, "08:00") # 指定时间后再调试
+def get_plane_image(reg):
+    if not reg or reg == "N/A":
+        return ""
+    
+    url = f"https://api.planespotters.net/pub/photos/reg/{reg}"
+    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"}
+    
+    try:
+        randNum = random.uniform(1, 5)
+        time.sleep( 1 / randNum) 
+        response = requests.get(url, headers=headers, timeout=5)
+        
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("photos") and len(data["photos"]) > 0:
+                photo_info = data["photos"][0]
+                img_url = photo_info["thumbnail_large"]["src"]
+                photographer = photo_info.get("photographer", "Unknown") # 拿到摄影师名字
+                return img_url, photographer
+    except Exception as e:
+        print(f"获取 {reg} 图片失败: {e}")
+        
+    return "", ""

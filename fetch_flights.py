@@ -19,8 +19,8 @@ def run_fetching(airport_code, target_date_obj):
     if os.path.exists(csvFileName):
         print(f"File '{csvFileName}' already exists.")
     else:
-        print(f"Deleting old files from {airport_code}...")
-        [os.remove(f) for f in os.listdir('.') if f.startswith(airport_code) and f.endswith(('arrivals.csv', 'arrivals.md'))] # 删除之前日期的文件
+        print(f"Deleting old files from {airport_code} if any...")
+        [os.remove(f) for f in os.listdir('.') if f.startswith(airport_code) and f.endswith(('arrivals.csv', 'arrivals.md', "arrivals.json"))] # 删除之前日期的文件
         print("Fetching Data From API...")
         fullScheduleData = fr_api.get_airport_details(airport_code, page=1)['airport']['pluginData']['schedule']
         totalPages = fullScheduleData['arrivals']['page']['total']  # 总页数
