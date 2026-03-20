@@ -12,7 +12,7 @@ else:
     target_date_obj = today
 
 # target_date_str = target_date_obj.strftime("%Y-%m-%d")
-target_date_str = "2026-03-20"
+target_date_str = "2026-03-21"
 outputFileName = f"{AIRPORT}_{target_date_str}_selected_arrivals.json"
     
 app = Flask(__name__)

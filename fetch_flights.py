@@ -73,7 +73,7 @@ def write_onePage_to_file(arrivalsList, csvFileName, stop_date_str):
                 # Convert timestamp to readable string
                 arrival_time_obj = datetime.datetime.fromtimestamp(arrival_ts)
                 arrival_date_str = arrival_time_obj.strftime('%Y-%m-%d')
-                arrival_fulltime_str = arrival_time_obj.strftime('%Y-%m-%d %H:%M')
+                arrival_fulltime_str = arrival_time_obj.strftime('%m-%d %H:%M')
                 if arrival_date_str >= stop_date_str: 
                     return False
             else:
@@ -99,9 +99,19 @@ def write_onePage_to_file(arrivalsList, csvFileName, stop_date_str):
             
             # Get full model text for cargo identification
             model_full = aircraft['model'].get('text') or "N/A"
+            
+            # 6. if flight is airborne, replace the scheduled arrival time with the estimated arrival time
+            status = flight.get('status') or {}
+            isAirborne = status.get('live', False)
+            if status!={} and isAirborne:
+                ETA_fulltime_str = time_info['estimated']["arrival"]
+                if ETA_fulltime_str:
+                    # Convert timestamp to readable string
+                    ETA_time_obj = datetime.datetime.fromtimestamp(ETA_fulltime_str)
+                    arrival_fulltime_str = ETA_time_obj.strftime('%m-%d %H:%M')
 
-            # Write list row to CSV file (No header needed as per request)
-            writer.writerow([flight_num, airline_name, arrival_fulltime_str, origin_code, model_code, registration, model_full])
+            # Write list row to CSV file
+            writer.writerow([flight_num, airline_name, arrival_fulltime_str, origin_code, model_code, registration, model_full, isAirborne])
             
     return True
 

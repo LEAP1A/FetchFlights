@@ -21,7 +21,7 @@ TARGET_MODELS_CONFIG = [ #包括窄体
 
 WRITING_FOR_MINIPROGRAM = 1 # 1 = json; 0 = md
 
-FILTER_START_TIME = "00:00" # 只在写入到.md下生效, json文件默认从00:00开始筛选
+FILTER_START_TIME = "04:00" # 只在写入到.md下生效, json文件默认从00:00开始筛选
 
 # ======================================================================
 def main():

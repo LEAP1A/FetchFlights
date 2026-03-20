@@ -144,6 +144,7 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
                 model_code = row[4]
                 registration = row[5]
                 model_full = row[6]
+                status = row[7]
 
                 is_selected = False
                 
@@ -151,7 +152,7 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
                 flight_data = {
                     "flightNo": flight_num,
                     "airline": airline_name,
-                    "time": arrival_time[5:],
+                    "time": arrival_time,
                     "origin": origin_code,
                     "type": model_code,
                     "reg": registration,
@@ -161,7 +162,8 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
                     "isForeign": False,    # 是否外籍/特殊注册号
                     "title": '',
                     "urlImage": "",
-                    "imageCreator": ""
+                    "imageCreator": "",
+                    "status": "Scheduled"
                 }
 
                 # --- 过滤器 1: 彩绘机检查 ---
@@ -212,7 +214,10 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
                             flight_data["isForeign"] = True
                             if flight_data["title"] == '':
                                 flight_data["title"] = f"{airline_name} {model_code}"
-
+                                
+                if status=='True':
+                    flight_data["status"] = "Enroute"
+            
                 # --- 时间验证与追加 ---
                 # 只有被选中，且时间晚于目标时间的航班才会被加入列表
                 if is_selected:
