@@ -19,9 +19,9 @@ TARGET_MODELS_CONFIG = [ #包括窄体
     "73F", "73Y", "73P", "742", "744", "74H", "74N", "74X", "74Y", "752", "75F", "763", "76W", "76X", "76Y", "772", "773", "77X", "77F", "77L", "77W", "788", "789", "781"
 ]
 
-WRITING_FOR_MINIPROGRAM = 1 # 1 = json; 0 = md
+WRITING_FOR_MINIPROGRAM = 0 # 1 = json; 0 = md
 
-FILTER_START_TIME = "04:00" # 只在写入到.md下生效, json文件默认从00:00开始筛选
+FILTER_START_TIME = "00:00" # 只在写入到.md下生效, json文件默认从00:00开始筛选
 
 # ======================================================================
 def main():
@@ -32,13 +32,13 @@ def main():
     tomorrow = today + datetime.timedelta(days=1)
     
     # -------------------正式运行前修改------------------------
-    target_date_obj = tomorrow # FOR DEBUGGING
+    # target_date_obj = tomorrow # FOR DEBUGGING
     # --------------------------------------------------------
     
-    # if datetime.datetime.now().hour > 12:
-    #     target_date_obj = tomorrow
-    # else:
-    #     target_date_obj = today
+    if datetime.datetime.now().hour > 12:
+        target_date_obj = tomorrow
+    else:
+        target_date_obj = today
     
     
     target_date_str = target_date_obj.strftime("%Y-%m-%d")

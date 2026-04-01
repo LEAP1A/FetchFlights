@@ -6,3 +6,4 @@ settings.json
 .DS_Store
 *.pyc
 *.json
+node_modules/

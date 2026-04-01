@@ -27,7 +27,7 @@ def run_filtering(airport_code, target_date_obj, target_model_lst, start_time_st
             f_out.write(f'<span style="color: red"><b> | Non-Chinese Reg=Red</b></span>\n\n') if airport_code.startswith("Z") else f_out.write("\n\n")
             
             f_out.write("| Flight | Airline | Arrival Time | Model | Reg | Origin |\n")
-            f_out.write("|---|---|---|---|---|---|\n") # Separator line
+            f_out.write("|---|---|---|---|---|---|\n")
 
             for row in reader:
                 # Skip empty lines
@@ -94,7 +94,7 @@ def run_filtering(airport_code, target_date_obj, target_model_lst, start_time_st
 
                 # --- Write row if selected ---
                 # 选择几点之后的航班
-                if is_selected and arrival_time >= f"{target_date_str} {start_time_str}":
+                if is_selected and arrival_time >= f"{target_date_str[5:]} {start_time_str}":
                     # Construct Markdown table row using pipes |
                     line = f"| {flight_num} | {disp_airline} | {arrival_time} | {disp_model} | {disp_reg} | {origin_code} |\n"
                     f_out.write(line)
