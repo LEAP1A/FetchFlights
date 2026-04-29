@@ -67,7 +67,7 @@ def run_filtering(airport_code, target_date_obj, target_model_lst, start_time_st
                     else: # 其他 = 薄荷青 + 加粗 
                         disp_model = f'<span style="color: #4682B4"><b>{model_code}</b></span>'
                 # Select Cargo
-                if "f" in model_full.lower() or "cargo" in airline_name.lower() or model_code in ["73F","75F", "76F", "77F", "77X", "74Y", "IL76"]:
+                if ("f" in model_full.lower() and model_code != 'B739') or "cargo" in airline_name.lower() or model_code in ["73F","75F", "76F", "77F", "77X", "74Y", "IL76"]:
                     is_selected = True
                     disp_model = f'<span style="color: #4682B4"><b>{model_code}(Cargo)</b></span>'
 
@@ -118,12 +118,18 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
         # 宽体
         "A124", "A306", "A19N", "A332", "A333", "A339", "A343", "A345", "A346", "A359", "A35K", "A388",
         "B742", "B744", "B748", "B762", "B763", "B764", "B772", "B77L", "B773", "B77W", "B788", "B789", "B78X",
-        "IL62", "IL76", "IL96", "MD11",  "IL6", "IL7", "I93",
+        "IL62", "IL76", "IL96", "MD11", "IL6", "IL7", "I93",
         # IATA
         "M1F", "330", "332", "333", "339", "343", "346", "359", "351", "388",
         "742", "744", "74H", "74N", "74X", "74Y", "763", "76W", "76X", "76Y", "772", "773", "77X", "77F", "77L", "77W", "788", "789", "781"
     ]
-    cargo_model_dic = {"73F":"732F", "73Y":"733F", "73P":"B734F", "73U":"738F", "75F":"757F", "76X": "762F", "76Y":"763F", "77X":"772F", "B77L": "772F", "74N":"748F", "74X":"742F", "74Y":"744F", "ABY":"306F", "33X":"332F", "33Y":"333F", "IL7":"IL76", "IL62":"IL62", "IL6": "IL62", "IL96": "IL96", "I93": "IL96", "MD11":"MD11F", "M1F":"MD11F"}
+    cargo_model_dic = {
+        "73F": "732F", "73Y": "733F", "73P": "B734F", "73U": "738F", "75F": "757F",
+        "76X": "762F", "76Y": "763F", "77X": "772F", "B77L": "772F", "74N": "748F",
+        "74X": "742F", "74Y": "744F", "ABY": "306F", "33X": "332F", "33Y": "333F",
+        "IL7": "IL76", "IL62": "IL62", "IL6": "IL62", "IL96": "IL96", "I93": "IL96",
+        "MD11": "MD11F", "M1F": "MD11F"
+    };
 
     selected_flights = [] # 用于收集最终符合条件的航班字典
 
@@ -181,7 +187,7 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
                         flight_data["title"] = f"{airline_name} {model_code}"
                             
                 # --- 过滤器 3: 货机检查 ---
-                if "f" in model_full.lower() or "cargo" in airline_name.lower() or model_code in cargo_model_dic:
+                if "cargo" in airline_name.lower() or model_code in cargo_model_dic:
                     is_selected = True
                     flight_data["isCargo"] = True
                     if flight_data["title"] == '':
@@ -200,8 +206,6 @@ def run_filterToJson(airport_code, target_date_obj, target_model_lst):
                                 flight_data["title"] = f"{airline_name} {model_code}"
                             
                     elif airport_code == "VHHH": # HKG
-                        # if airline_name == "Cathay Pacific" and "(" not in airline_name: # 暂时保留HKG的普通涂装国泰宽体
-                        #     continue
                         if (not re.match(r"^B-", registration)) or (len(registration) > 6): # 在HKG/MFM需要再排除港澳注册号，只保留台湾和其他国家注册号
                             is_selected = True
                             flight_data["isForeign"] = True

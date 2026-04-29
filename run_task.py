@@ -5,11 +5,11 @@ import filter_flights as filter  # filter_flights.py
 # ================= CONFIGURATION =================
 
 # Target Airport ICAO
-AIRPORT_CODE = "VMMC" 
+AIRPORT_CODE = "ZLXY" 
 
 TARGET_MODELS_CONFIG = [ #包括窄体
     # 窄体
-    "A19N", "B733", "B734", "B735", "B736", "B752", "AJ27", "C919","C09", "909", "919", 
+    "A19N", "B733", "B734", "B735", "B736", "B739", "B752", "AJ27", "C919","C09", "909", "919", 
     # 宽体
     "A124", "A306", "A19N", "A332", "A333", "A339", "A343", "A345", "A346", "A359", "A35K", "A388",
     "B742", "B744", "B748", "B762", "B763", "B764", "B772", "B77L", "B773", "B77W", "B788", "B789", "B78X",

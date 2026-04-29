@@ -43,37 +43,37 @@ const CARGO_MODEL_DIC = {
 const sleep = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 const randomSleep = (min, max) => sleep(Math.floor(Math.random() * (max - min + 1) * 1000));
 
-// 2. 日期格式化工具 (YYYY-MM-DD)
+const getChinaDate = (timestampMs) => {
+    const ms = timestampMs ? timestampMs : Date.now();
+    return new Date(ms + (8 * 60 * 60 * 1000));
+};
+
+// 警告：传入的 dateObj 必须是 getChinaDate 算出来的！
+// 并且必须统一使用 getUTC***() 系列方法，彻底绕开腾讯云操作系统的本地时区！
 const formatDate = (dateObj) => {
-    const y = dateObj.getFullYear();
-    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const d = String(dateObj.getDate()).padStart(2, '0');
+    const y = dateObj.getUTCFullYear();
+    const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getUTCDate()).padStart(2, '0');
     return `${y}-${m}-${d}`;
 };
 
-// 3. 时间格式化工具 (MM-DD HH:mm)
 const formatTime = (dateObj) => {
-    const m = String(dateObj.getMonth() + 1).padStart(2, '0');
-    const d = String(dateObj.getDate()).padStart(2, '0');
-    const H = String(dateObj.getHours()).padStart(2, '0');
-    const M = String(dateObj.getMinutes()).padStart(2, '0');
+    const m = String(dateObj.getUTCMonth() + 1).padStart(2, '0');
+    const d = String(dateObj.getUTCDate()).padStart(2, '0');
+    const H = String(dateObj.getUTCHours()).padStart(2, '0');
+    const M = String(dateObj.getUTCMinutes()).padStart(2, '0');
     return `${m}-${d} ${H}:${M}`;
 };
 
 const getTargetDateObj = () => {
-    // 东八区当前时间
-    const chinaTimeStr = new Date().toLocaleString('en-US', { timeZone: 'Asia/Shanghai', hour12: false });
-    const targetDate = new Date(chinaTimeStr); 
-    
-    // 2. 提取当前东八区的小时数 (0-23)
-    const currentHour = targetDate.getHours();
+    const targetDate = getChinaDate(); // 获取当前东八区时间
+    const currentHour = targetDate.getUTCHours(); // 必须用 UTC 拿小时！
 
-    // 3. 植入你的业务逻辑：如果过了 12 点，日期往后推一天
     if (currentHour > 12) {
-        targetDate.setDate(targetDate.getDate() + 1);
-        console.log(`[时间判定] 当前已过中午，目标日期为明天: ${targetDate.toLocaleDateString()}`);
+        targetDate.setUTCDate(targetDate.getUTCDate() + 1); // 往后推一天
+        console.log(`[时间判定] 当前已过中午，目标日期为明天`);
     } else {
-        console.log(`[时间判定] 当前未过中午，目标日期保持今天: ${targetDate.toLocaleDateString()}`);
+        console.log(`[时间判定] 当前未过中午，目标日期保持今天`);
     }
 
     return targetDate;
@@ -120,7 +120,7 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
     const stopDateStr = formatDate(stopDateObj);
 
     const outputFileName = `${airportCode}_${targetDateStr}_selected_arrivals.json`;
-    const selectedFlights = []; // 装载最终筛选结果的小推车
+    const selectedFlights = []; // 装载最终筛选结果
 
     console.log(`开始抓取 ${targetDateStr} ${airportCode} 的数据...`);
 
@@ -168,11 +168,10 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
             let arrivalFullTimeStr = "N/A";
 
             if (scheduled.arrival) {
-                // FR24 返回的是秒级时间戳，JS 需要乘 1000 变毫秒
-                const arrivalTimeObj = new Date(scheduled.arrival * 1000);
+                // 用秒级时间戳 * 1000 变成毫秒，传入我们的东八区转换器！
+                const arrivalTimeObj = getChinaDate(scheduled.arrival * 1000);
                 arrivalDateStr = formatDate(arrivalTimeObj);
                 
-                // 核心终止条件：如果发现这架飞机的排班时间已经是第二天了，立刻刹车！
                 if (arrivalDateStr >= stopDateStr) {
                     shouldStop = true;
                     break; 
@@ -180,7 +179,6 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
                 arrivalFullTimeStr = formatTime(arrivalTimeObj);
             }
             if (arrivalFullTimeStr.substring(0, 5) < targetDateStr.substring(5, 10)) {
-                console.log(`[时间过滤] 航班 ${flightNum} 的预计到达时间 ${arrivalFullTimeStr.substring(0, 5)} 早于目标日期 ${targetDateStr.substring(5, 10)}，跳过此航班。`);
                 continue;
             }
 
@@ -192,7 +190,8 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
             if (isAirborne) {
                 currentStatus = "Enroute";
                 if (timeInfo.estimated && timeInfo.estimated.arrival) {
-                    const etaTimeObj = new Date(timeInfo.estimated.arrival * 1000);
+                    // 这里也要加上 getChinaDate 转换
+                    const etaTimeObj = getChinaDate(timeInfo.estimated.arrival * 1000);
                     arrivalFullTimeStr = formatTime(etaTimeObj);
                 }
             }
@@ -235,7 +234,7 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
             }
 
             // 过滤器 3: 货机
-            if (modelFull.toLowerCase().includes("f") || airlineName.toLowerCase().includes("cargo") || CARGO_MODEL_DIC[modelCode]) {
+            if ((modelFull.toLowerCase().includes("f") && modelCode != 'B739') || airlineName.toLowerCase().includes("cargo") || CARGO_MODEL_DIC[modelCode]) {
                 isSelected = true;
                 flightData.isCargo = true;
                 if (!flightData.title) flightData.title = `${airlineName} ${modelCode}`;
@@ -266,7 +265,7 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
             }
 
             // ==========================================
-            // 命中目标，抓取照片并装车
+            // 抓取照片并放进大数组
             // ==========================================
             if (isSelected) {
                 if (registration !== "N/A") {
@@ -305,10 +304,6 @@ async function runFetchingAndFiltering(airportCode, targetDateObj, targetModelLs
     console.log(`数据已保存至: ${filePath}`);
 }
 
-// ==========================================
-// 启动调试！
-// ==========================================
-// 模拟你需要抓取的目标机型列表
 
 // 执行：抓取澳门机场，今天的数据
 runFetchingAndFiltering("VMMC", getTargetDateObj(), TARGET_MODELS_CONFIG);
